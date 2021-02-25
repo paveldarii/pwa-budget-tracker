@@ -136,7 +136,9 @@ function sendTransaction(isAdding) {
     })
     .catch((err) => {
       // fetch failed, so save in indexed db
-      saveRecord(transaction);
+      //saveRecord(transaction);
+      console.log(transaction);
+      useIndexedDb("budgetTrackerDB", "transactions", "put", transaction);
 
       // clear form
       nameEl.value = "";
@@ -161,6 +163,11 @@ function checkForIndexedDb() {
   return true;
 }
 
+function saveRecord(transaction) {
+  const request = window.indexedDB.open("budgetTrackerDb", 1);
+  console.log(transaction);
+}
+
 function useIndexedDb(databaseName, storeName, method, object) {
   return new Promise((resolve, reject) => {
     const request = window.indexedDB.open(databaseName, 1);
@@ -168,7 +175,7 @@ function useIndexedDb(databaseName, storeName, method, object) {
 
     request.onupgradeneeded = function (e) {
       const db = request.result;
-      db.createObjectStore(storeName, { keyPath: "_id" });
+      db.createObjectStore(storeName, { keyPath: "date" });
     };
 
     request.onerror = function (e) {
@@ -191,7 +198,7 @@ function useIndexedDb(databaseName, storeName, method, object) {
           resolve(all.result);
         };
       } else if (method === "delete") {
-        store.delete(object._id);
+        store.delete(object.date);
       }
       tx.oncomplete = function () {
         db.close();
