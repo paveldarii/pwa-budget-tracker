@@ -137,7 +137,7 @@ function sendTransaction(isAdding) {
     .catch((err) => {
       // fetch failed, so save in indexed db
       //saveRecord(transaction);
-      console.log(transaction);
+
       useIndexedDb("budgetTrackerDB", "transactions", "put", transaction);
 
       // clear form
@@ -154,18 +154,44 @@ document.querySelector("#sub-btn").onclick = function () {
   sendTransaction(false);
 };
 
+window.onload = checkInternetConnection;
+function checkInternetConnection() {
+  var isOnLine = navigator.onLine;
+  if (isOnLine) {
+    console.log("we are online");
+    useIndexedDb("budgetTrackerDB", "transactions", "get")
+      .then((data) => {
+        if (data != [] || !data) {
+          console.log(data);
+          return fetch("/api/transaction/bulk", {
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: {
+              Accept: "application/json, text/plain, */*",
+              "Content-Type": "application/json",
+            },
+          });
+        }
+      })
+      .then((response) => {
+        console.log(response);
+        return useIndexedDb("budgetTrackerDB", "transactions", "delete");
+      })
+      .then((deletedStatus) => {
+        location.reload();
+      });
+  } else {
+    console.log("we are offline");
+  }
+}
 //IndexedDB
+
 function checkForIndexedDb() {
   if (!window.indexedDB) {
     console.log("Your browser doesn't support a stable version of IndexedDB.");
     return false;
   }
   return true;
-}
-
-function saveRecord(transaction) {
-  const request = window.indexedDB.open("budgetTrackerDb", 1);
-  console.log(transaction);
 }
 
 function useIndexedDb(databaseName, storeName, method, object) {
@@ -175,7 +201,7 @@ function useIndexedDb(databaseName, storeName, method, object) {
 
     request.onupgradeneeded = function (e) {
       const db = request.result;
-      db.createObjectStore(storeName, { keyPath: "date" });
+      db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
     };
 
     request.onerror = function (e) {
@@ -198,7 +224,7 @@ function useIndexedDb(databaseName, storeName, method, object) {
           resolve(all.result);
         };
       } else if (method === "delete") {
-        store.delete(object.date);
+        store.clear();
       }
       tx.oncomplete = function () {
         db.close();
