@@ -15,7 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(express.static("public"));
-console.log(process.env.MongoDB_PORT);
 
 mongoose.connect(process.env.MONGODB_URI || process.env.MongoDB_PORT, {
   useNewUrlParser: true,
