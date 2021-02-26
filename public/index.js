@@ -135,14 +135,46 @@ function sendTransaction(isAdding) {
       }
     })
     .catch((err) => {
-      // fetch failed, so save in indexed db
-      //saveRecord(transaction);
-
       useIndexedDb("budgetTrackerDB", "transactions", "put", transaction);
 
       // clear form
       nameEl.value = "";
       amountEl.value = "";
+    });
+}
+
+//window.onload = checkIndexedDB;
+
+function checkIndexedDB() {
+  console.log("we are online");
+  useIndexedDb("budgetTrackerDB", "transactions", "get")
+    // then it post the bulk data to the mongoDB
+    .then((data) => {
+      if (data != [] || !data) {
+        return fetch("/api/transaction/bulk", {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+          },
+        });
+      }
+    })
+    // after the data is posted successfully to the mongoDB, we synchronize all the data on the screen with the one in the database
+    .then((response) => {
+      if (response.status === 200) {
+        populateChart();
+        populateTable();
+        populateTotal();
+        // lastly we clear indexedDB
+        return useIndexedDb("budgetTrackerDB", "transactions", "delete");
+      } else {
+        console.log(response);
+      }
+    })
+    .then((deletedStatus) => {
+      console.log(deletedStatus);
     });
 }
 
@@ -153,91 +185,5 @@ document.querySelector("#add-btn").onclick = function () {
 document.querySelector("#sub-btn").onclick = function () {
   sendTransaction(false);
 };
-
-//window.onload = checkIndexedDB;
-function checkIndexedDB() {
-  var isOnLine = navigator.onLine;
-  if (isOnLine) {
-    console.log("we are online");
-    useIndexedDb("budgetTrackerDB", "transactions", "get")
-      .then((data) => {
-        if (data != [] || !data) {
-          console.log(data);
-          return fetch("/api/transaction/bulk", {
-            method: "POST",
-            body: JSON.stringify(data),
-            headers: {
-              Accept: "application/json, text/plain, */*",
-              "Content-Type": "application/json",
-            },
-          });
-        }
-      })
-      .then((response) => {
-        if (response.status === 200) {
-          populateChart();
-          populateTable();
-          populateTotal();
-          return useIndexedDb("budgetTrackerDB", "transactions", "delete");
-        } else {
-          console.log(response);
-        }
-      })
-      .then((deletedStatus) => {
-        console.log(deletedStatus);
-      });
-  } else {
-    console.log("we are offline");
-  }
-}
-//IndexedDB
-
-function checkForIndexedDb() {
-  if (!window.indexedDB) {
-    console.log("Your browser doesn't support a stable version of IndexedDB.");
-    return false;
-  }
-  return true;
-}
-
-function useIndexedDb(databaseName, storeName, method, object) {
-  return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open(databaseName, 1);
-    let db, tx, store;
-
-    request.onupgradeneeded = function (e) {
-      const db = request.result;
-      db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
-    };
-
-    request.onerror = function (e) {
-      console.log("There was an error");
-    };
-
-    request.onsuccess = function (e) {
-      db = request.result;
-      tx = db.transaction(storeName, "readwrite");
-      store = tx.objectStore(storeName);
-
-      db.onerror = function (e) {
-        console.log("error");
-      };
-      if (method === "put") {
-        store.put(object);
-      } else if (method === "get") {
-        const all = store.getAll();
-        all.onsuccess = function () {
-          resolve(all.result);
-        };
-      } else if (method === "delete") {
-        store.clear();
-      }
-      tx.oncomplete = function () {
-        db.close();
-      };
-    };
-  });
-}
-
 // listen for app coming back online
 window.addEventListener("online", checkIndexedDB);
