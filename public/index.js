@@ -154,8 +154,8 @@ document.querySelector("#sub-btn").onclick = function () {
   sendTransaction(false);
 };
 
-window.onload = checkInternetConnection;
-function checkInternetConnection() {
+//window.onload = checkIndexedDB;
+function checkIndexedDB() {
   var isOnLine = navigator.onLine;
   if (isOnLine) {
     console.log("we are online");
@@ -174,11 +174,17 @@ function checkInternetConnection() {
         }
       })
       .then((response) => {
-        console.log(response);
-        return useIndexedDb("budgetTrackerDB", "transactions", "delete");
+        if (response.status === 200) {
+          populateChart();
+          populateTable();
+          populateTotal();
+          return useIndexedDb("budgetTrackerDB", "transactions", "delete");
+        } else {
+          console.log(response);
+        }
       })
       .then((deletedStatus) => {
-        location.reload();
+        console.log(deletedStatus);
       });
   } else {
     console.log("we are offline");
@@ -232,3 +238,6 @@ function useIndexedDb(databaseName, storeName, method, object) {
     };
   });
 }
+
+// listen for app coming back online
+window.addEventListener("online", checkIndexedDB);
