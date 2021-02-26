@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.static("public"));
 console.log(process.env.MongoDB_PORT);
 
-mongoose.connect(process.env.MongoDB_PORT || process.env.MONGODB_URI, {
+mongoose.connect(process.env.MONGODB_URI || process.env.MongoDB_PORT, {
   useNewUrlParser: true,
   useFindAndModify: false,
 });
