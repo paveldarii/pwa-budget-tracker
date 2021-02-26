@@ -53,12 +53,12 @@ self.addEventListener("fetch", function (evt) {
               if (response.status === 200) {
                 cache.put(evt.request.url, response.clone());
               }
-
               return response;
             })
             .catch((err) => {
               // Network request failed, try to get it from the cache.
               return cache.match(evt.request);
+              
             });
         })
         .catch((err) => console.log(err))
